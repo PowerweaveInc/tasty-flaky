@@ -31,12 +31,12 @@ common common-options
                  -Wredundant-constraints
                  -fhide-source-paths
                  -Wpartial-fields
-    default-language: GHC2021
+    default-language: Haskell2010
 
 library
     import:           common-options
     exposed-modules:  Test.Tasty.Flaky
-    build-depends:    base >=4.17 && <4.21
+    build-depends:    base >=4.14 && <4.21
                     , tagged >= 0.5 && <0.9
                     , retry >= 0.7 && <0.10
                     , tasty ^>=1.5
