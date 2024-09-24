@@ -13,6 +13,11 @@ category:           Testing
 build-type:         Simple
 tested-with:        GHC ==9.10.1
                      || ==9.8.2
+                     || ==9.6.6
+                     || ==9.4.8
+                     || ==9.2.8
+                     || ==9.0.2
+                     || ==8.10.7
 extra-doc-files:    CHANGELOG.md
                     README.md
 

@@ -47,7 +47,7 @@ jobs:
       run: |
         cabal build --only-dependencies
     
-    - name: Build dimensional
+    - name: Build package
       run: |
         cabal build
         
