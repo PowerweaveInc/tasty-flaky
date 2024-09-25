@@ -63,7 +63,7 @@ data FlakyTest t
 
 -- | Mark any test as flaky.
 --
--- If this test is not successful, it will be retries according to the supplied @'RetryPolicyM' 'IO'@. 
+-- If this test is not successful, it will be retried according to the supplied @'RetryPolicyM' 'IO'@. 
 -- See "Control.Retry" for documentation on how to specify a @'RetryPolicyM' 'IO'@.
 --
 -- For example, you can retry test cases from @tasty-hunit@ like so:
@@ -75,19 +75,18 @@ data FlakyTest t
 -- myFlakyTest = 'flakyTest' ('limitRetries' 5 <> 'constantDelay' 1000) $ testCase "some test case" $ do ... 
 -- @
 --
--- You can retry individual tests (like the example above), or retry entire groups by wrapping
--- 'Test.Tasty.testGroup'.
---
 flakyTest :: (RetryPolicyM IO) -> TestTree -> TestTree
-flakyTest policy (SingleTest name t) = SingleTest name (MkFlakyTest policy t)
-flakyTest policy (TestGroup name subtree) = TestGroup name (map (flakyTest policy) subtree)
-flakyTest policy (WithResource spec f) = WithResource spec (f <&> flakyTest policy)
-flakyTest _ other = other
+flakyTest policy (SingleTest name t)           = SingleTest name (MkFlakyTest policy t)
+flakyTest policy (TestGroup name subtree)      = TestGroup name (map (flakyTest policy) subtree)
+flakyTest policy (PlusTestOptions modOption t) = PlusTestOptions modOption (flakyTest policy t)
+flakyTest policy (WithResource spec f)         = WithResource spec (f <&> flakyTest policy)
+flakyTest policy (AskOptions f)                = AskOptions $ \optionSet -> flakyTest policy (f optionSet)
+flakyTest policy (After depType expr t)        = After depType expr (flakyTest policy t)
 
 
 instance IsTest t => IsTest (FlakyTest t) where
     run :: IsTest t => OptionSet -> FlakyTest t -> (Progress -> IO ()) -> IO Result
-    run opts (MkFlakyTest policy test) callback = go defaultRetryStatus
+    run opts (MkFlakyTest policy test) progressCallback = go defaultRetryStatus
         where
             -- The logic below mimics the `retry` package's Control.Retry.retrying
             -- with one major difference: we annotate the final result
@@ -95,7 +94,7 @@ instance IsTest t => IsTest (FlakyTest t) where
             -- the final result.
             go :: RetryStatus -> IO Result
             go status = do
-                result <- run opts test callback
+                result <- run opts test progressCallback
                 let consultPolicy policy' = do
                         rs <- applyAndDelay policy' status
                         case rs of
@@ -103,12 +102,17 @@ instance IsTest t => IsTest (FlakyTest t) where
                             Nothing -> pure $ annotateResult status result
                             -- At least one more retry
                             Just rs' -> do 
-                                callback (emptyProgress{progressText=mconcat ["Attempt #", show (rsIterNumber status + 1), " failed"]})
+                                progressCallback (annotateProgress status)
                                 go $! rs'
 
                 if resultSuccessful result
                     then pure $ annotateResult status result
                     else consultPolicy policy
+            
+            annotateProgress :: RetryStatus -> Progress
+            annotateProgress status 
+                -- Recall that `rsIterNumber` starts at 0, so the first attempt is rsIterNumber + 1
+                = emptyProgress{progressText=mconcat ["Attempt #", show (rsIterNumber status + 1), " failed"]}
             
             annotateResult :: RetryStatus -> Result -> Result
             annotateResult status result 
