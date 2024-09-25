@@ -52,7 +52,7 @@ import Control.Retry hiding (RetryPolicy)
 import Data.Functor ( (<&>) )
 import Data.Tagged (Tagged, retag )
 import Test.Tasty.Providers ( IsTest(..), Progress, Result, TestTree )
-import Test.Tasty.Runners ( TestTree(..), Result(..), resultSuccessful )
+import Test.Tasty.Runners ( TestTree(..), Result(..), Progress(..), emptyProgress, resultSuccessful )
 import Test.Tasty.Options ( OptionDescription, OptionSet )
 
 
@@ -99,8 +99,12 @@ instance IsTest t => IsTest (FlakyTest t) where
                 let consultPolicy policy' = do
                         rs <- applyAndDelay policy' status
                         case rs of
+                            -- We are done: no more retries
                             Nothing -> pure $ annotateResult status result
-                            Just rs' -> go $! rs'
+                            -- At least one more retry
+                            Just rs' -> do 
+                                callback (emptyProgress{progressText=mconcat ["Attempt #", show (rsIterNumber status + 1), " failed"]})
+                                go $! rs'
 
                 if resultSuccessful result
                     then pure $ annotateResult status result
@@ -112,8 +116,8 @@ instance IsTest t => IsTest (FlakyTest t) where
                 where
                     annotate :: RetryStatus -> String
                     annotate (RetryStatus iternum cumdelay _) 
-                        | iternum == 0 = " [First try]"
-                        | otherwise    = mconcat [" [", "Retried ", show iternum, " times, total delay of ", show cumdelay, " microseconds]"]
+                        | iternum == 0 = ""
+                        | otherwise    = mconcat [" [", show iternum, " retries, ", show cumdelay, " μs delay]"]
 
 
     testOptions :: Tagged (FlakyTest t) [OptionDescription]
