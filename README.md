@@ -1,6 +1,6 @@
 # `tasty-flaky`
 
-This provides [`tasty`](https://hackage.haskell.org/package/tasty) integration for flaky tests, which are tests that are known to fail intermittently.
+This provides [`tasty`](https://hackage.haskell.org/package/tasty) integration for flaky tests, which are tests that are known to fail intermittently. [`tasty-flaky`](https://hackage.haskell.org/package/tasty-flaky) can be installed from Hackage.
 
 ## Example usage
 
