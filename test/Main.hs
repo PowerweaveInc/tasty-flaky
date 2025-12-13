@@ -8,6 +8,7 @@ import Data.IORef as IORef
 import Test.Tasty ( TestTree, testGroup, defaultMain, withResource )
 import Test.Tasty.Flaky ( limitRetries, flakyTest )
 import Test.Tasty.HUnit ( testCase, assertFailure )
+import Control.Exception (throwIO)
 
 
 main :: IO ()
@@ -15,6 +16,7 @@ main = defaultMain
      $ testGroup "Test suite" 
      [ testSuccessOnFirstTry
      , testFlakyWithRetries
+     , testFlakyWithException
      , testFlakyWithRetriesProgressCallback
      ]
 
@@ -35,6 +37,19 @@ testFlakyWithRetries
                 unless (n == 0) $ do
                     IORef.modifyIORef' ioref (\m -> m - 1)
                     assertFailure "Not yet"
+
+
+-- This test will throw an exception until the contents of the IORef is zero
+testFlakyWithException :: TestTree
+testFlakyWithException 
+    = flakyTest (limitRetries 4) 
+        $ withResource (IORef.newIORef (3 :: Int)) (const $ pure ()) 
+            $ \getioref -> testCase "exception" $ do
+                ioref <- getioref
+                n <- IORef.readIORef ioref
+                unless (n == 0) $ do
+                    IORef.modifyIORef' ioref (\m -> m - 1)
+                    throwIO $ userError "Oh no!"
 
 
 -- This test will fail until the contents of the IORef is zero

@@ -55,8 +55,10 @@ import Control.Retry hiding (RetryPolicy)
 import Data.Functor ( (<&>) )
 import Data.Tagged (Tagged, retag )
 import Test.Tasty.Providers ( IsTest(..), Progress, Result, TestTree )
-import Test.Tasty.Runners ( TestTree(..), Result(..), Progress(..), emptyProgress, resultSuccessful )
+import Test.Tasty.Runners ( TestTree(..), Result(..), Progress(..), emptyProgress, resultSuccessful, Outcome (Failure), FailureReason (TestThrewException) )
 import Test.Tasty.Options ( OptionDescription, OptionSet )
+import Control.Exception (catch, SomeException, Exception (displayException))
+import Test.Tasty.Providers.ConsoleFormat (noResultDetails)
 
 
 -- | A test tree of type @t@, with an associated retry policy
@@ -136,7 +138,9 @@ instance IsTest t => IsTest (FlakyTest t) where
             -- the final result.
             go :: RetryStatus -> IO Result
             go status = do
-                result <- run opts test progressCallback
+                -- We need to explicitly catch exceptions as some runnints, like HUnit,
+                -- will not consider this strictly a test failure.
+                result <- run opts test progressCallback `catch` (pure . exceptionResult)
                 let done = pure $ annotateResult status result
                     consultPolicy policy' = do
                         rs <- applyAndDelay policy' status
@@ -175,3 +179,16 @@ instance IsTest t => IsTest (FlakyTest t) where
 
     testOptions :: Tagged (FlakyTest t) [OptionDescription]
     testOptions = retag (testOptions :: Tagged t [OptionDescription])
+
+
+-- | Shortcut for creating a 'Result' that indicates exception
+--
+-- This is defined in `tasty`, but not exported :(
+exceptionResult :: SomeException -> Result
+exceptionResult e = Result
+  { resultOutcome = Failure $ TestThrewException e
+  , resultDescription = "Exception: " ++ displayException e
+  , resultShortDescription = "FAIL"
+  , resultTime = 0
+  , resultDetailsPrinter = noResultDetails
+  }
