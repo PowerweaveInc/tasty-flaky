@@ -10,16 +10,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc-version:
-          - "8.10.7"
-          - "9.0.2"
-          - "9.2.8"
-          - "9.4.8"
-          - "9.6.7"
-          - "9.8.4"
-          - "9.10.3"
-          - "9.12.2"
-
+        include:
+          - ghc-version: "8.10.7"
+            cabal-flags: ""
+          - ghc-version: "9.0.2"
+            cabal-flags: ""
+          - ghc-version: "9.2.8"
+            cabal-flags: ""
+          - ghc-version: "9.4.8"
+            cabal-flags: ""
+          - ghc-version: "9.6.7"
+            cabal-flags: ""
+          - ghc-version: "9.8.4"
+            cabal-flags: ""
+          - ghc-version: "9.10.3"
+            cabal-flags: ""
+          - ghc-version: "9.12.2"
+            cabal-flags: ""
+          - ghc-version: "9.14.1"
+            # https://github.com/ekmett/tagged/issues/72
+            cabal-flags: "--allow-newer=template-haskell"
     steps:
     - uses: actions/checkout@v4
 
@@ -33,7 +43,7 @@ jobs:
     - name: Generate freeze file
       run: |
         cabal update
-        cabal configure --disable-optimization --enable-tests
+        cabal configure --disable-optimization --enable-tests ${{matrix.cabal-flags}}
         cabal freeze
     
     - name: Cache cabal work

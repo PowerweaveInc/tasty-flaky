@@ -1,5 +1,9 @@
 # Revision history for tasty-flaky
 
+## 0.1.3.1 --  2026-01-01
+
+* Added support for GHC 9.14
+
 ## 0.1.3.0 --  2025-12-13
 
 * Exceptions in tests will now be caught and considered test failures, even if the test runner

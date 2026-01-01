@@ -1,6 +1,6 @@
 cabal-version:      3.4
 name:               tasty-flaky
-version:            0.1.3.0
+version:            0.1.3.1
 synopsis:           Handle flaky Tasty-based tests
 description:
   This package allows to retry Tasty-based tests that are expected to fail intermittently -- also known as flaky tests.
@@ -12,7 +12,8 @@ maintainer:         Laurent René de Cotret
 copyright:          (c) Laurent René de Cotret
 category:           Testing
 build-type:         Simple
-tested-with:        GHC ==9.12.2
+tested-with:        GHC ==9.14.1
+                     || ==9.12.2
                      || ==9.10.3
                      || ==9.8.4
                      || ==9.6.7
@@ -43,7 +44,7 @@ common common-options
 library
     import:           common-options
     exposed-modules:  Test.Tasty.Flaky
-    build-depends:    base >=4.14 && <4.22
+    build-depends:    base >=4.14 && <4.23
                     , tagged >= 0.5 && <0.9
                     , retry >= 0.7 && <0.10
                     , tasty ^>=1.5
